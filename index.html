@@ -252,21 +252,8 @@ button:active{
 </div>
 
 <div>
-<label>Lieu</label>
-<div class="field">
-<input type="text" id="f-lieu">
-<button class="mic" onclick="startDictation('f-lieu',this)">🎤</button>
-</div>
-</div>
-
-<div>
-<label>Date de début</label>
-<input type="date" id="f-date-debut">
-</div>
-
-<div>
-<label>Date de fin</label>
-<input type="date" id="f-date-fin">
+<label>Date</label>
+<input type="date" id="f-date">
 </div>
 
 <div>
@@ -287,6 +274,14 @@ button:active{
 </div>
 
 <div>
+<label>Lieu</label>
+<div class="field">
+<input type="text" id="f-lieu">
+<button class="mic" onclick="startDictation('f-lieu',this)">🎤</button>
+</div>
+</div>
+
+<div>
 <label>Réseau</label>
 <div class="field">
 <input type="text" id="f-reseau">
@@ -302,10 +297,10 @@ button:active{
 </div>
 </div>
 
-<div class="full">
+<div>
 <label>Configuration</label>
 <div class="field">
-<textarea id="f-configuration" style="min-height:70px"></textarea>
+<input type="text" id="f-configuration">
 <button class="mic" onclick="startDictation('f-configuration',this)">🎤</button>
 </div>
 </div>
@@ -353,12 +348,15 @@ button:active{
 </div>
 
 <div style="text-align:center;font-size:11px;color:var(--grey);margin-top:15px;padding:0 28px;">
-Version 11/09/2026
+Version 10/09/2026
 </div>
 
 </div>
 
 <script>
+
+document.getElementById("f-date").value =
+new Date().toISOString().split("T")[0];
 
 // ===========================
 // LOGO : conversion en PNG standard (le PNG source est en
@@ -709,18 +707,18 @@ let y = hauteurBandeau + 12;
 
 // ---------------------------------------------------------
 // CHAMPS EN GRILLE (2 colonnes), façon champs de saisie
-// Ordre : Client / Lieu / Date de début / Date de fin /
-//         Durée / Type de journée / Réseau / Formateur
+// Ordre : Client / Date / Durée / Type de journée /
+//         Lieu / Réseau / Formateur / Configuration
 // ---------------------------------------------------------
 const lignes = [
 ["Client", v("f-client")],
-["Lieu", v("f-lieu")],
-["Date de début", v("f-date-debut")],
-["Date de fin", v("f-date-fin")],
-["Durée (H)", v("f-duree")],
+["Date", v("f-date")],
+["Durée", v("f-duree")],
 ["Type de journée", v("f-type-journee")],
+["Lieu", v("f-lieu")],
 ["Réseau", v("f-reseau")],
-["Formateur", v("f-formateur")]
+["Formateur", v("f-formateur")],
+["Configuration", v("f-configuration")]
 ];
 
 const gap = 6;
@@ -753,27 +751,9 @@ for(let i=0;i<lignes.length;i+=2){
     y += champHauteur + 4;
 }
 
-// Champ Configuration (pleine largeur, hauteur variable, multi-lignes)
-const configurationTxt = doc.splitTextToSize(v("f-configuration") || "", largeurUtile-8);
-const configurationH = Math.max(champHauteur, 7 + configurationTxt.length*5);
-if(y + configurationH > 270){
-    doc.addPage();
-    y = 20;
-}
-dessinerChamp(marge, y, largeurUtile, configurationH, "Configuration", "");
-doc.setFont(undefined,"normal");
-doc.setFontSize(10.5);
-doc.setTextColor(cInk[0],cInk[1],cInk[2]);
-doc.text(configurationTxt, marge+4, y+11);
-y += configurationH + 10;
-
 // Champ Participants (pleine largeur, hauteur variable)
 const participantsTxt = doc.splitTextToSize(v("f-participants") || "", largeurUtile-8);
 const participantsH = Math.max(champHauteur, 7 + participantsTxt.length*5);
-if(y + participantsH > 270){
-    doc.addPage();
-    y = 20;
-}
 dessinerChamp(marge, y, largeurUtile, participantsH, "Participants", "");
 doc.setFont(undefined,"normal");
 doc.setFontSize(10.5);
@@ -790,41 +770,12 @@ const sections = [
 ["DIFFICULTÉS",v("f-difficultes")]
 ];
 
-// Limite basse utile d'une page : au-delà, on bascule sur une
-// nouvelle page plutôt que de laisser du texte déborder sous le
-// pied de page (ligne + numérotation dessinés à y=285/290).
-const limiteBasPage = 270;
-
-function sautDePageSiBesoin(hauteurNecessaire){
-    if(y + hauteurNecessaire > limiteBasPage){
-        doc.addPage();
-        y = 20;
-    }
-}
-
 sections.forEach(function(s){
 
-    const interligne = 5.5;
-    const lignesTxt = doc.splitTextToSize(s[1] || "", largeurUtile);
-
-    // Hauteur du titre + de la ligne de séparation, puis hauteur de
-    // tout le contenu du champ (toutes lignes confondues).
-    const hauteurEntete = 12;
-    const hauteurTotaleChamp = hauteurEntete + lignesTxt.length*interligne;
-
-    // Si le champ complet (titre + contenu) ne tient pas dans l'espace
-    // restant de la page en cours, on bascule l'ensemble du champ (et
-    // pas seulement son contenu) sur une nouvelle page, afin d'éviter
-    // que le titre reste seul en bas de page pendant que le texte se
-    // retrouve en page suivante. On ne force ce saut que si la page
-    // courante contient déjà autre chose (sinon un champ très long
-    // continuera naturellement de se répartir sur plusieurs pages).
-    if(y + hauteurTotaleChamp > limiteBasPage && y > 20){
+    // Saut de page si besoin
+    if(y > 265){
         doc.addPage();
         y = 20;
-    }else{
-        // Saut de page si le titre de section ne tiendrait même pas seul
-        sautDePageSiBesoin(20);
     }
 
     doc.setFont(undefined,"bold");
@@ -848,18 +799,10 @@ sections.forEach(function(s){
     doc.setFontSize(10.5);
     doc.setTextColor(cInk[0],cInk[1],cInk[2]);
 
-    // On imprime ligne par ligne (et non le bloc entier d'un coup)
-    // afin de déclencher automatiquement une nouvelle page si, malgré
-    // tout, le contenu dépasse une page entière à lui seul - ex. un
-    // champ "Difficultés rencontrées" très long continuera alors en
-    // page suivante.
-    lignesTxt.forEach(function(ligne){
-        sautDePageSiBesoin(interligne);
-        doc.text(ligne, marge, y);
-        y += interligne;
-    });
+    let txt = doc.splitTextToSize(s[1] || "", largeurUtile);
+    doc.text(txt, marge, y);
 
-    y += 10;
+    y += txt.length * 5.5 + 10;
 
 });
 
@@ -875,7 +818,7 @@ for(let p=1;p<=nbPages;p++){
     doc.setFontSize(8);
     doc.setTextColor(cGrey[0],cGrey[1],cGrey[2]);
     doc.setFont(undefined,"normal");
-    doc.text("Version 11/09/2026", marge, 290);
+    doc.text("Version 10/09/2026", marge, 290);
     doc.text(String(p) + " / " + nbPages, pageW-marge, 290, {align:"right"});
 }
 doc.setTextColor(0,0,0);
@@ -884,16 +827,9 @@ return doc;
 
 }
 
-function plageDatePourNomFichier(){
-    const debut = v("f-date-debut");
-    const fin = v("f-date-fin");
-    if(debut && fin && debut !== fin) return debut + "_au_" + fin;
-    return debut || fin || new Date().toISOString().split("T")[0];
-}
-
 function nomFichierPdf(){
     const client = v("f-client").trim().replace(/[^a-z0-9]+/gi,"-") || "sans-client";
-    const date = plageDatePourNomFichier();
+    const date = v("f-date") || new Date().toISOString().split("T")[0];
     const typeJournee = v("f-type-journee").trim().replace(/[^a-z0-9]+/gi,"-") || "sans-type";
     return client + "-" + date + "-" + typeJournee + ".pdf";
 }
@@ -974,8 +910,7 @@ const corps = `
 RAPPORT DE FORMATION ET ACCOMPAGNEMENT
 
 Client : ${v("f-client")}
-Date de début : ${v("f-date-debut")}
-Date de fin : ${v("f-date-fin")}
+Date : ${v("f-date")}
 Durée : ${v("f-duree")}
 Type de journée : ${v("f-type-journee")}
 Lieu : ${v("f-lieu")}
@@ -997,7 +932,7 @@ DIFFICULTÉS
 ${v("f-difficultes")}
 
 ---
-Version 11/09/2026
+Version 10/09/2026
 `;
 
 // 1) Sur iPhone/Android : ouvre le menu de partage natif avec le PDF
@@ -1046,8 +981,8 @@ if(estMobile && file && navigator.canShare && navigator.canShare({files:[file]})
 doc.save(fichierPdf);
 
 const corpsAvecRappel = corps.replace(
-    "---\nVersion 11/09/2026",
-    "---\nPensez à joindre le PDF téléchargé (" + fichierPdf + ") avant l'envoi.\n\nVersion 11/09/2026"
+    "---\nVersion 10/09/2026",
+    "---\nPensez à joindre le PDF téléchargé (" + fichierPdf + ") avant l'envoi.\n\nVersion 10/09/2026"
 );
 
 setTimeout(function(){
@@ -1071,9 +1006,7 @@ document
 .querySelectorAll("input[type=text],input[type=number],textarea")
 .forEach(el=>el.value="");
 
-document.getElementById("f-date-debut").value =
-new Date().toISOString().split("T")[0];
-document.getElementById("f-date-fin").value =
+document.getElementById("f-date").value =
 new Date().toISOString().split("T")[0];
 
 });
