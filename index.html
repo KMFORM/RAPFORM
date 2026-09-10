@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+D<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -18,7 +18,7 @@
     --ink:#1B2733;
     --grey:#667380;
     --line:#DCE4EA;
-}
+}D
 
 *{
     box-sizing:border-box;
@@ -30,7 +30,7 @@ body{
     margin:0;
     padding:24px 16px;
     color:var(--ink);
-}
+}D
 
 .container{
     max-width:1000px;
@@ -353,7 +353,7 @@ button:active{
 </div>
 
 <div style="text-align:center;font-size:11px;color:var(--grey);margin-top:15px;padding:0 28px;">
-Version 11/09/2026
+Version 11/09/2026-V2
 </div>
 
 </div>
@@ -446,12 +446,14 @@ function getRecognition(){
     recognition.continuous = true;
 
     // Concatene existant + ajout en gerant l'espacement :
-    // rien si l'un des deux est vide, pas d'espace apres un \n.
+    // rien si l'un des deux est vide, pas d'espace parasite avant
+    // ou apres un saut de ligne (debut de ligne "propre").
     function combiner(existant, ajout){
         if(ajout === "") return existant;
         if(existant === "") return ajout;
-        if(/\n\s*$/.test(existant)) return existant + ajout;
-        return existant + " " + ajout;
+        const existantPropre = existant.replace(/[ \t]+$/, "");
+        if(/\n$/.test(existantPropre) || /^\n/.test(ajout)) return existantPropre + ajout;
+        return existantPropre + " " + ajout;
     }
 
     // Recompose le texte finalise a partir de l'historique des
@@ -502,7 +504,10 @@ function getRecognition(){
     // ponctuation par les vrais caracteres correspondants.
     // Saut de ligne : "a la ligne" / "nouvelle ligne" / "retour a la ligne"
     // Ponctuation : "virgule" "point" "point d'interrogation"
-    // "point d'exclamation" "deux points" "point-virgule" "tiret"
+    // "point d'exclamation" "deux points" "point-virgule"
+    // "tiret" : passe automatiquement a la ligne et place un tiret
+    // devant le mot/la phrase qui suit (pratique pour dicter une
+    // liste a puces, un tiret par ligne).
     function appliquerCommandesVocales(texte){
         return texte
             .replace(/\s*(retour\s+à\s+la\s+ligne|nouvelle\s+ligne|à\s+la\s+ligne)\s*/gi, "\n")
@@ -511,9 +516,9 @@ function getRecognition(){
             .replace(/\s*point[\s-]virgule\s*/gi, ";")
             .replace(/\s*deux\s+points\s*/gi, ":")
             .replace(/\s*virgule\s*/gi, ",")
-            .replace(/\s*tiret\s*/gi, "-")
+            .replace(/\s*tiret\s*/gi, "\n- ")
             .replace(/\s*point\s*/gi, ".")
-            .trim();
+            .replace(/^[ \t]+|[ \t]+$/g, "");
     }
 
     // Commande vocale pour annuler le dernier segment dicte :
@@ -875,7 +880,7 @@ for(let p=1;p<=nbPages;p++){
     doc.setFontSize(8);
     doc.setTextColor(cGrey[0],cGrey[1],cGrey[2]);
     doc.setFont(undefined,"normal");
-    doc.text("Version 11/09/2026", marge, 290);
+    doc.text("Version 11/09/2026-V2", marge, 290);
     doc.text(String(p) + " / " + nbPages, pageW-marge, 290, {align:"right"});
 }
 doc.setTextColor(0,0,0);
@@ -895,7 +900,7 @@ function nomFichierPdf(){
     const client = v("f-client").trim().replace(/[^a-z0-9]+/gi,"-") || "sans-client";
     const date = plageDatePourNomFichier();
     const typeJournee = v("f-type-journee").trim().replace(/[^a-z0-9]+/gi,"-") || "sans-type";
-    return client + "-" + date + "-" + typeJournee + ".pdf";
+    return "RP-" + client + "-" + date + "-" + typeJournee + ".pdf";
 }
 
 // ===========================
@@ -1001,7 +1006,7 @@ DIFFICULTÉS
 ${v("f-difficultes")}
 
 ---
-Version 11/09/2026
+Version 11/09/2026-V2
 `;
 
 // 1) Sur iPhone/Android : ouvre le menu de partage natif avec le PDF
@@ -1050,8 +1055,8 @@ if(estMobile && file && navigator.canShare && navigator.canShare({files:[file]})
 doc.save(fichierPdf);
 
 const corpsAvecRappel = corps.replace(
-    "---\nVersion 11/09/2026",
-    "---\nPensez à joindre le PDF téléchargé (" + fichierPdf + ") avant l'envoi.\n\nVersion 11/09/2026"
+    "---\nVersion 11/09/2026-V2",
+    "---\nPensez à joindre le PDF téléchargé (" + fichierPdf + ") avant l'envoi.\n\nVersion 11/09/2026-V2"
 );
 
 setTimeout(function(){
